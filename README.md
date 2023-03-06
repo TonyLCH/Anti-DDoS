@@ -15,7 +15,7 @@
 1. 將腳本下載到本地。
 
    ```
-   git clone https://github.com/Anti-DDoS.git
+   git clone https://github.com/TonyLCH/Anti-DDoS.git
    ```
    
 2. 在命令行中運行以下命令以啟動伺服器：
