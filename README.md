@@ -5,10 +5,10 @@
 ## 系統需求
 
 * Python 3.x
-* 套接字(socket)庫
-* 正則表達式(re)庫
-* 日誌(logging)庫
-* 線程(threading)庫
+* socket
+* re
+* logging
+* threading
 
 ## 使用方法
 
