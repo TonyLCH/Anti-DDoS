@@ -1,6 +1,4 @@
-好的，我們可以針對這些方面進行改進。以下是改進的程式碼：
-
-```python
+python
 import socket
 import threading
 import time
