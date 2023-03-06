@@ -1,6 +1,6 @@
 # Web伺服器DDoS攔截
 
-這是一個基於Python的Web伺服器，它可以檢測並阻擋一些常見的攻擊，如HTTP Flood攻擊、SYN Flood攻擊、UDP Flood攻擊和DoS攻擊。此外，它還具有AI學習功能，可以自動學習攻擊者的行為，並在需要時阻擋它們。
+這是一個基於Python語言編寫的Web服務器安全防護工具，它可以檢測並阻擋一些常見的攻擊，包括DDoS攻擊、SQL注入攻擊、Cross-site scripting攻擊等。此外，它還支持從HTTP請求中學習攻擊模式，以便自動識別和阻止惡意攻擊。
 
 ## 系統需求
 
@@ -34,7 +34,14 @@
 - `UDP_THRESHOLD`：UDP Flag的閾值。如果一個IP地址發送的UDP Flag數量超過這個閾值，它就會被加入黑名單。
 
 ## 功能說明
+支持以下功能：
 
+- 防止DDoS攻擊：它能夠檢測並防止多種類型的DDoS攻擊，包括TCP SYN Flood攻擊、UDP Flood攻擊等。
+- 防止SQL注入攻擊：它能夠檢測並防止SQL注入攻擊。
+- 防止Cross-site scripting攻擊：它能夠檢測並防止Cross-site scripting攻擊。
+- 學習攻擊模式：它能夠從HTTP請求中學習攻擊模式，以便自動識別和阻止惡意攻擊。
+- 檢查Referer和X-Forwarded-For頭：它能夠檢查HTTP請求中的Referer和X-Forwarded-For頭，以防止來自偽造IP地址的攻擊。
+- 歷史記錄：它能夠將HTTP請求添加到歷史記錄中，以便更好地分析攻擊模式。
 ### AI學習
 
 該腳本可以自動學習攻擊者的行為，並在需要時阻擋它們。從HTTP請求中學習攻擊模式，以便自動識別和阻止惡意攻擊和將HTTP請求添加到歷史記錄中，以便更好地分析攻擊模式，並在需要時進行清理。它還使用黑名單和白名單來控制訪問，並記錄所有HTTP請求。
