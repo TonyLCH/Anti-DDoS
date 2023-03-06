@@ -17,7 +17,7 @@
 2. 在命令行中運行以下命令以啟動伺服器：
 
    ```
-   python3 advancedcc.py
+   python3 antiddos-advanced.py
    ```
 
 3. 在瀏覽器中輸入 `http://localhost:8080` 以訪問伺服器。
