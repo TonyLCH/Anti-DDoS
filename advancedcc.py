@@ -153,7 +153,7 @@ def is_on_whitelist(ip_address: str) -> bool:
 
 
 def learn(ip_address: str, request: str):
-    #自學習
+    #AI學習
     if ip_address in http_requests:
         http_requests[ip_address] += 1
     else:
