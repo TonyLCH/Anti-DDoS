@@ -27,18 +27,14 @@ request_history = deque(maxlen=REQUEST_HISTORY_LIMIT)
 
 # 定義函數
 def add_to_blacklist(ip_address: str):
-    """
-    將IP地址添加到黑名單中
-    """
+    #將IP地址添加到黑名單中
     if ip_address not in blacklist:
         blacklist.append(ip_address)
         logging.warning('Added IP address to blacklist: %s', ip_address)
 
 
 def add_to_whitelist(ip_address: str):
-    """
-    將IP地址添加到白名單中
-    """
+    #將IP地址添加到白名單中
     if ip_address not in whitelist:
         whitelist.append(ip_address)
         logging.info('Added IP address to whitelist: %s', ip_address)
