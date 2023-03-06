@@ -1,4 +1,4 @@
-# 基於Python的Web伺服器
+# Web伺服器DDoS攔截
 
 這是一個基於Python的Web伺服器，它可以檢測並阻擋一些常見的攻擊，如Http Flood攻擊、SYN Flood攻擊、UDP Flood攻擊和DoS攻擊。此外，它還具有AI學習功能，可以自動學習攻擊者的行為，並在需要時阻擋它們。
 
