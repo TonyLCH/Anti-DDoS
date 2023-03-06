@@ -27,7 +27,7 @@
 
 可以通過修改以下變量來配置腳本的行為：
 
-- `HTTP_PORT`：HTTP服務器的端口號。
+- `HTTP_PORT`：HTTP服務器的端口號。(默認監聽端口8080)
 - `IP_HTTP_THRESHOLD`：IP地址的HTTP請求閾值。如果一個IP地址的HTTP請求次數超過這個閾值，它就會被加入黑名單。
 - `NODE_HTTP_THRESHOLD`：節點的HTTP請求閾值。如果一個IP地址對一個節點的HTTP請求次數超過這個閾值，它就會被加入黑名單。
 - `SYN_THRESHOLD`：SYN Flag的閾值。如果一個IP地址發送的SYN Flag數量超過這個閾值，它就會被加入黑名單。
