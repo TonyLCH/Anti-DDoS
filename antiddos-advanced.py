@@ -1,228 +1,187 @@
-python
 import socket
 import threading
 import time
-import json
 import re
 import logging
 from collections import deque
-from typing import List, Dict
 
-# 防禦參數
-HOST = '0.0.0.0'  # 監聽IP地址
-PORT = 8080  # 監聽端口
-BACKLOG = 50  # 最大連接數
-IP_THRESHOLD = 100  # 攻擊IP閾值
-NODE_THRESHOLD = 10  # 攻擊頻率節點閾值
-REQUEST_LIMIT = 100  # 單個IP地址的最大請求數量
-REQUEST_HISTORY_LIMIT = 1000  # 記錄請求歷史的最大數量
-CLEAN_INTERVAL = 60  # 定期清理計數器和名單的時間間隔（秒）
-LEARNING_RATE = 0.1  # 自學習速率
-MAX_BLACKLIST_SIZE = 10000  # 黑名單最大數量
-MAX_WHITELIST_SIZE = 10000  # 白名單最大數量
-BLACKLIST_CLEAN_INTERVAL = 3600  # 清理黑名單的時間間隔（秒）
-WHITELIST_CLEAN_INTERVAL = 3600  # 清理白名單的時間間隔（秒）
-SYN_FLOOD_THRESHOLD = 20  # SYN Flood攻擊閾值
-UDP_FLOOD_THRESHOLD = 10000  # UDP Flood攻擊閾值
+# 設置常量
+HOST = '0.0.0.0'
+PORT = 8080
+BACKLOG = 5
+REQUEST_LIMIT = 10
+IP_THRESHOLD = 100
+NODE_THRESHOLD = 10
+SYN_FLOOD_THRESHOLD = 5
+UDP_FLOOD_THRESHOLD = 10
+REQUEST_HISTORY_LIMIT = 1000
+CLEAN_INTERVAL = 60 * 10  # 10分鐘
 
-# 防禦狀態
-http_requests = {}  # 記錄IP地址的HTTP請求數量
-ip_addresses = []  # 記錄攻擊IP地址和時間
-blacklist = deque(maxlen=MAX_BLACKLIST_SIZE)  # 黑名單
-whitelist = deque(maxlen=MAX_WHITELIST_SIZE)  # 白名單
-request_history = deque(maxlen=REQUEST_HISTORY_LIMIT)  # 記錄請求歷史
-
-# 日誌配置
-logging.basicConfig(filename='ddos_protection.log', level=logging.WARNING,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+# 定義全局變量
+ip_addresses = []
+http_requests = {}
+blacklist = []
+whitelist = []
+request_history = deque(maxlen=REQUEST_HISTORY_LIMIT)
 
 
-def block_ip_address(ip_address: str):
-    #將IP地址加入黑名單
+# 定義函數
+def add_to_blacklist(ip_address: str):
+    """
+    將IP地址添加到黑名單中
+    """
     if ip_address not in blacklist:
         blacklist.append(ip_address)
-        if ip_address in whitelist:
-            whitelist.remove(ip_address)
-        logging.warning('Blocked IP address: %s', ip_address)
-
-
-def unblock_ip_address(ip_address: str):
-    #將IP地址從黑名單中移除
-    if ip_address in blacklist:
-        blacklist.remove(ip_address)
-        logging.warning('Unblocked IP address: %s', ip_address)
+        logging.warning('Added IP address to blacklist: %s', ip_address)
 
 
 def add_to_whitelist(ip_address: str):
-    #將IP地址加入白名單
+    """
+    將IP地址添加到白名單中
+    """
     if ip_address not in whitelist:
         whitelist.append(ip_address)
-        if ip_address in blacklist:
-            blacklist.remove(ip_address)
-        logging.warning('Whitelisted IP address: %s', ip_address)
+        logging.info('Added IP address to whitelist: %s', ip_address)
 
 
-def clean_http_requests():
-    #清理HTTP請求計數器
-    for ip_address in list(http_requests.keys()):
-        if http_requests[ip_address] == 0:
-            http_requests.pop(ip_address)
-        else:
-            http_requests[ip_address] -= 1
+def is_ip_suspicious(ip_address: str) -> bool:
+    #檢查IP地址是否可疑
+    if ip_address in whitelist:
+        return False
+    count = ip_addresses.count(ip_address)
+    if count > IP_THRESHOLD:
+        return True
+    return False
 
 
-def clean_ip_addresses():
-    #清理攻擊IP地址記錄
-    global ip_addresses
-    now = time.time()
-    ip_addresses = [ip for ip in ip_addresses if now - ip['time'] <= IP_THRESHOLD]
-
-
-def clean_blacklist():
-    #清理黑名單
-    global blacklist
-    now = time.time()
-    blacklist = deque([ip for ip in blacklist if now - ip['time'] <= BLACKLIST_CLEAN_INTERVAL],
-                      maxlen=MAX_BLACKLIST_SIZE)
-
-
-def clean_whitelist():
-    #清理白名單
-    global whitelist
-    now = time.time()
-    whitelist = deque([ip for ip in whitelist if now - ip['time'] <= WHITELIST_CLEAN_INTERVAL],
-                       maxlen=MAX_WHITELIST_SIZE)
-
-
-def clean_request_history():
-    #清理請求歷史
-    global request_history
-    now = time.time()
-    request_history = deque([req for req in request_history if now - req['time'] <= CLEAN_INTERVAL],
-                            maxlen=REQUEST_HISTORY_LIMIT)
-
-
-def update_request_history(ip_address: str):
-    #更新請求歷史
-    request_history.append({'ip_address': ip_address, 'time': time.time()})
+def is_node_suspicious(ip_address: str) -> bool:
+    #檢查節點是否可疑
+    if ip_address in whitelist:
+        return False
+    count = 0
+    for ip in ip_addresses:
+        if ip.startswith(ip_address):
+            count += 1
+    if count > NODE_THRESHOLD:
+        return True
+    return False
 
 
 def is_syn_flood_attack(ip_address: str) -> bool:
     #檢查是否為SYN Flood攻擊
+    if ip_address in whitelist:
+        return False
     count = 0
-    for req in request_history:
-        if req['ip_address'] == ip_address and 'SYN' in req['request']:
+    for http_request in request_history:
+        if http_request['ip_address'] == ip_address and http_request['syn_flag']:
             count += 1
-            if count >= SYN_FLOOD_THRESHOLD:
-                return True
+    if count > SYN_FLOOD_THRESHOLD:
+        return True
     return False
 
 
 def is_udp_flood_attack(ip_address: str) -> bool:
     #檢查是否為UDP Flood攻擊
+    if ip_address in whitelist:
+        return False
     count = 0
-    for req in request_history:
-        if req['ip_address'] == ip_address and 'UDP' in req['request']:
+    for http_request in request_history:
+        if http_request['ip_address'] == ip_address and http_request['udp_flag']:
             count += 1
-            if count >= UDP_FLOOD_THRESHOLD:
-                return True
-    return False
-
-
-def is_attack(ip_address: str) -> bool:
-    #檢查是否為攻擊
-    if len(ip_addresses) >= IP_THRESHOLD:
+    if count > UDP_FLOOD_THRESHOLD:
         return True
-    node_count = 0
-    for ip in ip_addresses:
-        if ip['ip_address'] == ip_address:
-            node_count += 1
-            if node_count >= NODE_THRESHOLD:
-                return True
     return False
-
-
-def is_on_blacklist(ip_address: str) -> bool:
-    #檢查IP地址是否在黑名單中
-    return ip_address in blacklist
-
-
-def is_on_whitelist(ip_address: str) -> bool:
-    #檢查IP地址是否在白名單中
-    return ip_address in whitelist
-
-
-def learn(ip_address: str, request: str):
-    #AI學習
-    if ip_address in http_requests:
-        http_requests[ip_address] += 1
-    else:
-        http_requests[ip_address] = 1
-    update_request_history(ip_address)
-    if is_syn_flood_attack(ip_address):
-        block_ip_address(ip_address)
-    elif is_udp_flood_attack(ip_address):
-        block_ip_address(ip_address)
-    elif is_attack(ip_address):
-        block_ip_address(ip_address)
-    elif http_requests[ip_address] >= REQUEST_LIMIT:
-        block_ip_address(ip_address)
 
 
 def handle_request(sock: socket.socket, ip_address: str):
-    #處理請求
-    try:
-        request = sock.recv(1024).decode('utf-8')
-        if not request:
-            return
-        if is_on_blacklist(ip_address):
-            logging.warning('Blocked request from blacklisted IP address: %s', ip_address)
-            return
-        if is_on_whitelist(ip_address):
-            logging.warning('Allowed request from whitelisted IP address: %s', ip_address)
-            sock.sendall('HTTP/1.1 200 OK\n\n'.encode('utf-8'))
-            return
-        if request.startswith('GET / HTTP/1.1'):
-            sock.sendall('HTTP/1.1 200 OK\n\n'.encode('utf-8'))
-            return
-        if request.startswith('POST /login HTTP/1.1'):
-            match = re.search(r'username=([^&]+)&password=([^&]+)', request)
-            if match:
-                username = match.group(1)
-                password = match.group(2)
-                if username == 'admin' and password == 'admin':
-                    add_to_whitelist(ip_address)
-                    logging.warning('Added IP address to whitelist: %s', ip_address)
-            sock.sendall('HTTP/1.1 200 OK\n\n'.encode('utf-8'))
-            return
-        learn(ip_address, request)
-        sock.sendall('HTTP/1.1 200 OK\n\n'.encode('utf-8'))
-    except Exception as e:
-        logging.warning('Error handling request: %s', e)
-    finally:
-        sock.close()
+    #處理HTTP請求
+    global ip_addresses
+    global http_requests
+    global blacklist
+    global request_history
+    # 讀取HTTP請求
+    http_request = b''
+    while True:
+        data = sock.recv(1024)
+        if not data:
+            break
+        http_request += data
+        if b'\r\n\r\n' in http_request:
+            break
+    # 解析HTTP請求
+    http_request_str = http_request.decode('utf-8')
+    http_method = re.match(r'^([A-Z]+)', http_request_str).group(1)
+    http_path = re.match(r'^[A-Z]+\s+([^\s]+)', http_request_str).group(1)
+    http_version = re.match(r'^[A-Z]+\s+[^\s]+\s+([^\r]+)', http_request_str).group(1)
+    headers = re.findall(r'([^\r]+)\r\n', http_request_str)[1:]
+    syn_flag = False
+    udp_flag = False
+    for header in headers:
+        if header.startswith('User-Agent:'):
+            user_agent = header.split(':')[1].strip()
+            if 'Java/' in user_agent:
+                # 檢測到Java User-Agent，可能是Minecraft攻擊，需要進一步檢查是否為SYN Flood攻擊或UDP Flood攻擊
+        elif header.startswith('Connection:') and header.endswith('SYN'):
+            syn_flag = True
+        elif header.startswith('Connection:') and header.endswith('UDP'):
+            udp_flag = True
+    # 更新全局變量
+    ip_addresses.append(ip_address)
+    http_requests[ip_address] = http_requests.get(ip_address, 0) + 1
+    request_history.append({'ip_address': ip_address, 'http_method': http_method, 'http_path': http_path,
+                            'http_version': http_version, 'syn_flag': syn_flag, 'udp_flag': udp_flag})
+    # 檢查是否需要加入黑名單
+    if is_ip_suspicious(ip_address) or is_node_suspicious(ip_address) or is_syn_flood_attack(ip_address) or is_udp_flood_attack(ip_address):
+        add_to_blacklist(ip_address)
+        sock.send(b'HTTP/1.1 403 Forbidden\r\n\r\n')
+        logging.warning('Blocked suspicious request from IP address: %s', ip_address)
+    else:
+        # 處理HTTP請求
+        if http_requests[ip_address] > REQUEST_LIMIT:
+            add_to_blacklist(ip_address)
+            sock.send(b'HTTP/1.1 403 Forbidden\r\n\r\n')
+            logging.warning('Blocked request from IP address, exceeding request limit: %s', ip_address)
+        else:
+            sock.send(b'HTTP/1.1 200 OK\r\n\r\n')
+            logging.info('Processed request from IP address: %s', ip_address)
+    # 關閉socket
+    sock.close()
 
 
-def main():
-    #主函數
+def clean_blacklist():
+    #清理黑名單
+    global blacklist
+    logging.info('Cleaning blacklist...')
+    now = time.time()
+    blacklist = [ip_address for ip_address in blacklist if now - ip_address[1] < CLEAN_INTERVAL]
+
+
+def start_server():
+    #啟動HTTP伺服器
+    # 設置日誌
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    # 創建socket
     server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_sock.bind((HOST, PORT))
     server_sock.listen(BACKLOG)
-    logging.warning('Server started')
+    logging.info('Server started on port %s...', PORT)
+    # 循環處理HTTP請求
     while True:
-        try:
-            sock, address = server_sock.accept()
-            ip_address = address[0]
-            ip_addresses.append({'ip_address': ip_address, 'time': time.time()})
-            threading.Thread
-            (target=handle_request, args=(sock, ip_address)).start()
-            cleanup_request_history()
-        except KeyboardInterrupt:
-            logging.warning('Server stopped')
-            break
+        # 接受socket連接
+        sock, addr = server_sock.accept()
+        ip_address = addr[0]
+        # 清理黑名單
+        clean_blacklist()
+        # 檢查是否在黑名單中
+        if ip_address in blacklist:
+            sock.send(b'HTTP/1.1 403 Forbidden\r\n\r\n')
+            logging.warning('Blocked request from blacklisted IP address: %s', ip_address)
+            sock.close()
+        else:
+            # 分配線程處理HTTP請求
+            threading.Thread(target=handle_request, args=(sock, ip_address)).start()
 
 
 if __name__ == '__main__':
-    main()
-    
+    start_server()
