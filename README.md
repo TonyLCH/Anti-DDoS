@@ -17,7 +17,7 @@
 2. 在命令行中運行以下命令以啟動伺服器：
 
    ```
-   python web_server.py
+   python advancedcc.py
    ```
 
 3. 在瀏覽器中輸入 `http://localhost:8080` 以訪問伺服器。
