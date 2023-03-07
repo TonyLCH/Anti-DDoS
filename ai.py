@@ -8,7 +8,7 @@ from keras.utils import np_utils
 from sklearn.preprocessing import StandardScaler
 
 # 設置常量
-HTTP_PORT = 80
+HTTP_PORT = 8080
 IP_BLACKLIST_DURATION = 60 * 60  # IP地址在黑名單中的持續時間（秒）
 IP_WHITE_THRESHOLD = 10  # IP地址在白名單中的最小出現次數
 IP_HTTP_THRESHOLD = 20  # IP地址的HTTP請求次數閾值
