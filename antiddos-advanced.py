@@ -1,3 +1,4 @@
+幫我查出呢段代碼有咩bug同埋修復嗰個bug並重新整過。
 import socket
 import threading
 import time
