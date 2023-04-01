@@ -63,7 +63,7 @@ def is_syn_flood_attack(ip_address):
     return False
 
 
-def is_udp_flood_attack(ip_address)
+def is_udp_flood_attack(ip_address):
     #檢查是否為UDP Flood攻擊
     for request in request_history:
         if request['ip_address'] == ip_address and request['udp_flag']:
