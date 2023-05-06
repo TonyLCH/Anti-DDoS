@@ -147,3 +147,4 @@ class DDoSDefender:
         if ip in self.whitelist:
             self.logger.info('Removing IP {} from whitelist'.format(ip))
             self.whitelist.remove(ip)
+            print ('''test''')
